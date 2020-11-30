@@ -138,7 +138,7 @@ def session_location(session):
     ip_address = session['ip_address']
     secure = '🔒' if session['secure'] else '🔓'
     if session['location'] == 'wan':
-        url = f'{base_url}?apikey={apikey}&cmd=get_geoip_lookup&ip_address={ip_address}'
+        url = f'{base_url}/api/v2?apikey={apikey}&cmd=get_geoip_lookup&ip_address={ip_address}'
         geo_response = do_request(url)
         city = geo_response['response']['data']['city']
         state = geo_response['response']['data']['region']
