@@ -10,7 +10,7 @@ import json
 import os
 import urllib.request
 import base64
-from datetime import datetime
+from datetime import datetime, timedelta
 
 PLUGIN_PATH = os.path.join(os.getcwd(), __file__)
 
@@ -75,11 +75,11 @@ def session_quality(session):
 
 def session_summary(session):
     thumb = session['parent_thumb'] if session['media_type'] == 'episode' else session['thumb']
-    req = urllib.request.Request(f'{base_url}/api/v2?apikey={apikey}&cmd=pms_image_proxy&img={thumb}&height=70')
+    req = urllib.request.Request(f'{base_url}/api/v2?apikey={apikey}&cmd=pms_image_proxy&img={thumb}&height=75')
     response = urllib.request.urlopen(req)
     data = response.read()
     img = base64.b64encode(data).decode('utf-8')
-    state = '►' if session['state'] == 'playing' else '❙ ❙'
+    state = '►' if session['state'] == 'playing' else '❙❙'
     user = session['username']
     full_title = session['full_title']
     if session['media_type'] == 'episode':
@@ -92,9 +92,25 @@ def session_summary(session):
         title = full_title
         year = session['year']
         full_title = f'{title}<br>{year}'
+    elif session['media_type'] == 'track':
+        track = session['media_index']
+        title = session['title']
+        artist = session['grandparent_title']
+        album = session['parent_title']
+        full_title = f'{track} - {title}<br>{artist} — {album}'
 
     rating_key = session['rating_key']
-    return f'{user}<br>{state} {full_title} | image={img} href={base_url}/info?rating_key={rating_key}'
+    return f'{user}<br>{state}  {full_title} | image={img} href={base_url}/info?rating_key={rating_key}'
+
+def session_time(session):
+    total_duration = int(session['duration'])/1000
+    progress = int(session['progress_percent'])/100
+    watched_duration = progress * total_duration
+    
+    duration_delta = str(timedelta(seconds=int(total_duration))).lstrip('0').lstrip(':')
+    watched_delta = str(timedelta(seconds=int(watched_duration))).lstrip('0').lstrip(':')
+
+    return f'⏱{watched_delta} / {duration_delta}'
 
 def session_video(session):
     video_decision = session['stream_video_decision']
@@ -149,7 +165,7 @@ def session_location(session):
 
 def title(count):
     count_str = str(count).translate(SUBSCRIPTS) if count > 0 else ''
-    title_str = f'{count_str} ❯ | size=16'
+    title_str = f'{count_str} ❯ | size=18 baselineOffset=-1'
     if count > 0:
         title_str += ' color=#cc7b19'
     return title_str
@@ -197,6 +213,7 @@ def bitbar():
 
             separator()
             print(session_summary(session))
+            print(session_time(session))
             if media_type != 'track':
                 print(session_video(session)) 
             print(session_audio(session))
