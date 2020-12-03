@@ -19,13 +19,13 @@ PLUGIN_PATH = os.path.join(os.getcwd(), __file__)
 # ---
 
 # URL the Tautulli
-base_url = "http://TAUTULLI_HOST:8181"
-apikey = "TAUTULLI_API_KEY"
+tautulli_base_url = "http://{TAUTULLI_HOST}:8181"
+apikey = "{TAUTULLI_API_KEY}"
+plex_url = "{PLEX_URL}"
 
 # API urls
-url_activity = f'{base_url}/api/v2?apikey={apikey}&cmd=get_activity'
-url_history = f'{base_url}/api/v2?apikey={apikey}&cmd=get_history&length=5&include_activity=0'
-
+url_activity = f'{tautulli_base_url}/api/v2?apikey={apikey}&cmd=get_activity'
+url_history = f'{tautulli_base_url}/api/v2?apikey={apikey}&cmd=get_history&length=5&include_activity=0'
 SUBSCRIPTS = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
 
 # ---
@@ -74,12 +74,17 @@ def session_quality(session):
         return f'{quality}'
 
 def session_summary(session):
-    thumb = session['parent_thumb'] if session['media_type'] == 'episode' else session['thumb']
-    req = urllib.request.Request(f'{base_url}/api/v2?apikey={apikey}&cmd=pms_image_proxy&img={thumb}&height=75')
-    response = urllib.request.urlopen(req)
-    data = response.read()
-    img = base64.b64encode(data).decode('utf-8')
-    state = '►' if session['state'] == 'playing' else '❙❙'
+    thumb = session['parent_thumb'] or session['grandparent_thumb'] if session['media_type'] == 'episode' else session['thumb']
+    img = None
+    if thumb:
+        req = urllib.request.Request(f'{tautulli_base_url}/api/v2?apikey={apikey}&cmd=pms_image_proxy&img={thumb}&height=75')
+        try:
+            response = urllib.request.urlopen(req)
+            data = response.read()
+            img = base64.b64encode(data).decode('utf-8')
+        except:
+            pass
+    state = '▶' if session['state'] == 'playing' else '❚ ❚'
     user = session['username']
     full_title = session['full_title']
     if session['media_type'] == 'episode':
@@ -100,7 +105,10 @@ def session_summary(session):
         full_title = f'{track} - {title}<br>{artist} — {album}'
 
     rating_key = session['rating_key']
-    return f'{user}<br>{state}  {full_title} | image={img} href={base_url}/info?rating_key={rating_key}'
+    if img:
+        return f'{user}<br>{state}  {full_title} | image={img} href={tautulli_base_url}/info?rating_key={rating_key}'
+    else:
+        return f'{user}<br>{state}  {full_title} | href={tautulli_base_url}/info?rating_key={rating_key}'
 
 def session_time(session):
     total_duration = int(session['duration'])/1000
@@ -131,9 +139,9 @@ def session_video(session):
         decoding = f'{video_codec} {video_resolution}'
         encoding = f'{stream_codec} {stream_resolution}'
 
-        return f'🎥{decision[video_decision]} / {decoding} → {encoding}'
+        return f'🎥{decision[video_decision]} • {decoding} → {encoding}'
     else:
-        return f'🎥{decision[video_decision]} / {stream_codec} {stream_resolution}'
+        return f'🎥{decision[video_decision]} • {stream_codec} {stream_resolution}'
 
 def session_audio(session):
     audio_decision = session['stream_audio_decision']
@@ -145,20 +153,20 @@ def session_audio(session):
     if audio_decision == 'transcode':
         decoding = f'{audio_codec} {audio_channels}'
         encoding = f'{stream_audio_codec} {stream_audio_channels}'
-        return f'🔈{decision[audio_decision]} / {decoding} → {encoding}'
+        return f'🔈{decision[audio_decision]} • {decoding} → {encoding}'
     else:
-        return f'🔈{decision[audio_decision]} / {stream_audio_codec}'
+        return f'🔈{decision[audio_decision]} • {stream_audio_codec}'
 
 def session_location(session):
     location = session['location'].upper()
     ip_address = session['ip_address']
     secure = '🔒' if session['secure'] else '🔓'
     if session['location'] == 'wan':
-        url = f'{base_url}/api/v2?apikey={apikey}&cmd=get_geoip_lookup&ip_address={ip_address}'
+        url = f'{tautulli_base_url}/api/v2?apikey={apikey}&cmd=get_geoip_lookup&ip_address={ip_address}'
         geo_response = do_request(url)
         city = geo_response['response']['data']['city']
         state = geo_response['response']['data']['region']
-        return f'{secure}{location}: {ip_address} / {city}, {state}'
+        return f'{secure}{location}: {ip_address} • {city}, {state}'
     else:
         return f'{secure}{location}: {ip_address}'
 
@@ -182,7 +190,7 @@ def history_summary(session):
         name = session['title']
         title = f'{show} - S{season} • E{episode} - {name}'
     ended = datetime.fromtimestamp(session['stopped']).strftime('%b %d')
-    return f'{ended} / {user} / {media} {title}'
+    return f'{ended} • {user} • {media} {title}'
 
 # Layout    
 def bitbar():
@@ -193,7 +201,8 @@ def bitbar():
     print(title(stream_count))
     separator()
 
-    print(f'Open Tautulli | href={base_url}/home')
+    print(f'Open Tautulli | href={tautulli_base_url}/home')
+    print(f'Open Plex | href={plex_url}')
     separator()
 
     if stream_count == 0:
