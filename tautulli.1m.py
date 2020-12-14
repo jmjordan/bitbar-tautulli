@@ -54,7 +54,7 @@ activity = get_activity()
 history = get_history()
 
 decision = {'direct play': 'Direct Play', 'copy': 'Direct Stream', 'transcode': 'Transcode'}
-media_type = {'episode': '📺', 'movie': '🎞', 'track': '🎵'}
+media_type = {'episode': '􀎲', 'movie': '􀎶', 'track': '􀑪'}
 
 def session_quality(session):
     quality = session['quality_profile']
@@ -84,7 +84,7 @@ def session_summary(session):
             img = base64.b64encode(data).decode('utf-8')
         except:
             pass
-    state = '▶' if session['state'] == 'playing' else '❚ ❚'
+    state = '􀊄' if session['state'] == 'playing' else '􀊆'
     user = session['username']
     full_title = session['full_title']
     if session['media_type'] == 'episode':
@@ -92,23 +92,23 @@ def session_summary(session):
         season = session['parent_media_index']
         episode = session['media_index']
         name = session['title']
-        full_title = f'{show} - S{season} • E{episode}<br>{name}'
+        full_title = f'{show} - S{season} • E{episode}\\n{name}'
     elif session['media_type'] == 'movie':
         title = full_title
         year = session['year']
-        full_title = f'{title}<br>{year}'
+        full_title = f'{title}\\n{year}'
     elif session['media_type'] == 'track':
         track = session['media_index']
         title = session['title']
         artist = session['grandparent_title']
         album = session['parent_title']
-        full_title = f'{track} - {title}<br>{artist} — {album}'
+        full_title = f'{track} - {title}\\n{artist} — {album}'
 
     rating_key = session['rating_key']
     if img:
-        return f'{user}<br>{state}  {full_title} | image={img} href={tautulli_base_url}/info?rating_key={rating_key}'
+        return f'{user}\\n{state}  {full_title} | image={img} href={tautulli_base_url}/info?rating_key={rating_key}'
     else:
-        return f'{user}<br>{state}  {full_title} | href={tautulli_base_url}/info?rating_key={rating_key}'
+        return f'{user}\\n{state}  {full_title} | href={tautulli_base_url}/info?rating_key={rating_key}'
 
 def session_time(session):
     total_duration = int(session['duration'])/1000
@@ -118,7 +118,7 @@ def session_time(session):
     duration_delta = str(timedelta(seconds=int(total_duration))).lstrip('0').lstrip(':')
     watched_delta = str(timedelta(seconds=int(watched_duration))).lstrip('0').lstrip(':')
 
-    return f'⏱{watched_delta} / {duration_delta}'
+    return f'{watched_delta} / {duration_delta} | sfimage=clock'
 
 def session_video(session):
     video_decision = session['stream_video_decision']
@@ -131,17 +131,17 @@ def session_video(session):
     if video_decision == 'transcode':
 
         if session['transcode_hw_decoding']:
-            video_codec += '[HW]'
+            video_codec = '􀫥' + video_codec
        
         if session['transcode_hw_encoding']:
-            stream_codec += '[HW]'
+            stream_codec = '􀫥' + stream_codec
 
         decoding = f'{video_codec} {video_resolution}'
         encoding = f'{stream_codec} {stream_resolution}'
 
-        return f'🎥{decision[video_decision]} • {decoding} → {encoding}'
+        return f'{decision[video_decision]} • {decoding} → {encoding} | sfimage=v.square.fill'
     else:
-        return f'🎥{decision[video_decision]} • {stream_codec} {stream_resolution}'
+        return f'{decision[video_decision]} • {stream_codec} {stream_resolution} | sfimage=v.square.fill'
 
 def session_audio(session):
     audio_decision = session['stream_audio_decision']
@@ -153,27 +153,27 @@ def session_audio(session):
     if audio_decision == 'transcode':
         decoding = f'{audio_codec} {audio_channels}'
         encoding = f'{stream_audio_codec} {stream_audio_channels}'
-        return f'🔈{decision[audio_decision]} • {decoding} → {encoding}'
+        return f'{decision[audio_decision]} • {decoding} → {encoding} | sfimage=a.square.fill'
     else:
-        return f'🔈{decision[audio_decision]} • {stream_audio_codec}'
+        return f'{decision[audio_decision]} • {stream_audio_codec} | sfimage=a.square.fill'
 
 def session_location(session):
     location = session['location'].upper()
     ip_address = session['ip_address']
-    secure = '🔒' if session['secure'] else '🔓'
+    secure = 'lock.fill' if session['secure'] else 'lock.open.fill'
     if session['location'] == 'wan':
         url = f'{tautulli_base_url}/api/v2?apikey={apikey}&cmd=get_geoip_lookup&ip_address={ip_address}'
         geo_response = do_request(url)
         city = geo_response['response']['data']['city']
         state = geo_response['response']['data']['region']
-        return f'{secure}{location}: {ip_address} • {city}, {state}'
+        return f'{location}: {ip_address} • {city}, {state} | sfimage={secure}'
     else:
-        return f'{secure}{location}: {ip_address}'
+        return f'{location}: {ip_address} | sfimage={secure}'
 
 
 def title(count):
     count_str = str(count).translate(SUBSCRIPTS) if count > 0 else ''
-    title_str = f'{count_str} ❯ | size=18 baselineOffset=-1'
+    title_str = f' ❯ {count_str}| size=18 baselineOffset=-1'
     if count > 0:
         title_str += ' color=#cc7b19'
     return title_str
@@ -188,9 +188,9 @@ def history_summary(session):
         season = session['parent_media_index']
         episode = session['media_index']
         name = session['title']
-        title = f'{show} - S{season} • E{episode} - {name}'
+        title = f'{show} - S{season} • E{episode}'
     ended = datetime.fromtimestamp(session['stopped']).strftime('%b %d')
-    return f'{ended} • {user} • {media} {title}'
+    return f'{media} {ended} • {user} • {title}'
 
 # Layout    
 def bitbar():
